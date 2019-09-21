@@ -32,6 +32,8 @@ public class FunctionComputeProxyController {
         if(groupName!=null && groupName.equalsIgnoreCase("aengine")){
             serverlessPackage = "gl.linpeng.serverless.aengine.controller";
         }
+        postData = postData.replaceAll("\\r","");
+        postData = postData.replaceAll("\\n","");
 
         // get all Serverless
         String className = serverlessPackage + "." + toCamelName(functionName) + "Controller";
