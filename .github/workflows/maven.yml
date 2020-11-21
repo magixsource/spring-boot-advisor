@@ -27,5 +27,5 @@ jobs:
     - name: Build by aliyun
       run: mvn -B package -P geek --file pom.xml
     - name: Build the Docker image
-      run: pwd && ls && cp ./target/*.jar ./app.jar  && ls
+      run: cp ./target/*.jar ./app.jar  && ls && docker build . --file Dockerfile --tag spring-boot-advisor:$(date +%s)
       # docker build . --file Dockerfile --tag spring-boot-advisor:$(date +%s)
