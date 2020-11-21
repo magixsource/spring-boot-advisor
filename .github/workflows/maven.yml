@@ -40,5 +40,5 @@ jobs:
           push: true
           tags: |
             magixsource/spring-boot-advisor:latest
-            magixsource/spring-boot-advisor:$(date +%s)
+            magixsource/spring-boot-advisor:1.0.0
       # run: cp ./target/*.jar ./app.jar && docker build . --file Dockerfile --tag spring-boot-advisor:$(date +%s)
