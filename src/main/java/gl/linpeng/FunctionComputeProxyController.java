@@ -10,11 +10,13 @@ import com.aliyun.fc.runtime.Credentials;
 import com.aliyun.fc.runtime.FunctionComputeLogger;
 import com.aliyun.fc.runtime.FunctionParam;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gl.linpeng.gf.annotation.Auth;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -118,6 +120,17 @@ public class FunctionComputeProxyController {
             Class[] types = handle.getParameterTypes();
             ObjectMapper mapper = new ObjectMapper();
             Type type = clz.getGenericSuperclass();
+
+            // 增加auth验证判断
+            Annotation annotation = clz.getAnnotation(Auth.class);
+            if(annotation != null){
+                // 需要鉴权
+                String token = ctx.getExecutionCredentials().getSecurityToken();
+                if(token == null || token.length() == 0){
+                    throw new RuntimeException("Can't invoke method,Check secret token please.");
+                }
+            }
+
             ParameterizedType parameterizedType = (ParameterizedType) type;
             Class actualClass = (Class) parameterizedType.getActualTypeArguments()[0];
             Object dto = mapper.readValue(postData, actualClass);
