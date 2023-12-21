@@ -35,30 +35,30 @@ public class FunctionComputeProxyController {
     private static final Logger logger = LoggerFactory.getLogger(FunctionComputeProxyController.class);
 
     private Cache<String, String> lfuCache = CacheUtil.newLFUCache(1000);
-    private String[] cacheFunctions = new String[]{"disease","food","ingredient","foodMaterialQuery"};
+    private String[] cacheFunctions = new String[]{"disease", "food", "ingredient", "foodMaterialQuery"};
 
     @RequestMapping(value = "/proxy/{groupName}/{functionName}", method = RequestMethod.POST)
-    public Object proxy(@PathVariable String functionName,@PathVariable String groupName, @RequestBody String postData,@RequestHeader Map header) throws ClassNotFoundException, IllegalAccessException, InstantiationException, InvocationTargetException, IOException {
+    public Object proxy(@PathVariable String functionName, @PathVariable String groupName, @RequestBody String postData, @RequestHeader Map header) throws ClassNotFoundException, IllegalAccessException, InstantiationException, InvocationTargetException, IOException {
         String serverlessPackage = "gl.linpeng.serverless.advisor.controller";
-        if(groupName!=null && groupName.equalsIgnoreCase("aengine")){
+        if (groupName != null && groupName.equalsIgnoreCase("aengine")) {
             serverlessPackage = "gl.linpeng.serverless.aengine.controller";
         }
-        postData = postData.replaceAll("\\r","");
-        postData = postData.replaceAll("\\n","");
+        postData = postData.replaceAll("\\r", "");
+        postData = postData.replaceAll("\\n", "");
 
         logger.info("===================begin:");
-        logger.info("Request    Function:"+functionName);
-        logger.info("Request       Group:"+groupName);
-        logger.info("Request      Header:"+header);
-        logger.info("Request RequestBody:"+postData);
+        logger.info("Request    Function:" + functionName);
+        logger.info("Request       Group:" + groupName);
+        logger.info("Request      Header:" + header);
+        logger.info("Request RequestBody:" + postData);
 
         boolean isCacheable = Arrays.asList(cacheFunctions).contains(functionName);
         String result = null;
-        Map<String,Object> requestBody = JSON.parseObject(postData, Map.class);
-        String cacheKey = "group:"+groupName+"-function:"+functionName+"-id:"+requestBody.get("id")+"-page:"+requestBody.get("page")+"-pageSize:"+requestBody.get("pageSize");
-        if(isCacheable && lfuCache.containsKey(cacheKey)){
-             result =  lfuCache.get(cacheKey);
-        }else{
+        Map<String, Object> requestBody = JSON.parseObject(postData, Map.class);
+        String cacheKey = "group:" + groupName + "-function:" + functionName + "-id:" + requestBody.get("id") + "-page:" + requestBody.get("page") + "-pageSize:" + requestBody.get("pageSize");
+        if (isCacheable && lfuCache.containsKey(cacheKey)) {
+            result = lfuCache.get(cacheKey);
+        } else {
             // get all Serverless
             String className = serverlessPackage + "." + toCamelName(functionName) + "Controller";
             Class clz = getClass().getClassLoader().loadClass(className);
@@ -83,7 +83,26 @@ public class FunctionComputeProxyController {
 
                 @Override
                 public Credentials getExecutionCredentials() {
-                    return null;
+                    Credentials credentials = new Credentials() {
+                        @Override
+                        public String getAccessKeyId() {
+                            Object accessKey = header.get("FC-ACCESS-KEY");
+                            return accessKey == null ? null : accessKey.toString();
+                        }
+
+                        @Override
+                        public String getAccessKeySecret() {
+                            Object accessSecret = header.get("FC-ACCESS-SECRET");
+                            return accessSecret == null ? null : accessSecret.toString();
+                        }
+
+                        @Override
+                        public String getSecurityToken() {
+                            Object accessToken = header.get("FC-ACCESS-TOKEN");
+                            return accessToken == null ? null : accessToken.toString();
+                        }
+                    };
+                    return credentials;
                 }
 
                 @Override
@@ -105,12 +124,12 @@ public class FunctionComputeProxyController {
             Object jsonObject = handle.invoke(instance, dto, ctx);
             result = JSON.toJSONString(jsonObject);
             // cache result
-            if(isCacheable){
-                lfuCache.put(cacheKey,result, DateUnit.HOUR.getMillis() * 24);
+            if (isCacheable) {
+                lfuCache.put(cacheKey, result, DateUnit.HOUR.getMillis() * 24);
             }
         }
 
-        logger.info("Response       Body:"+ result);
+        logger.info("Response       Body:" + result);
         logger.info("=====================end.");
         return result;
     }
