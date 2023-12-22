@@ -103,6 +103,9 @@ public class FunctionComputeProxyController {
                         @Override
                         public String getSecurityToken() {
                             Object accessToken = header.get("FC-ACCESS-TOKEN");
+                            if(accessToken == null){
+                                accessToken = header.get("Authorization");
+                            }
                             return accessToken == null ? null : accessToken.toString();
                         }
                     };
