@@ -9,6 +9,7 @@ import com.aliyun.fc.runtime.Context;
 import com.aliyun.fc.runtime.Credentials;
 import com.aliyun.fc.runtime.FunctionComputeLogger;
 import com.aliyun.fc.runtime.FunctionParam;
+import com.auth0.jwt.interfaces.Claim;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gl.linpeng.gf.annotation.Auth;
 import gl.linpeng.gf.utils.TokenUtil;
@@ -42,7 +43,7 @@ public class FunctionComputeProxyController {
     private String[] cacheFunctions = new String[]{"disease", "food", "ingredient", "foodMaterialQuery"};
 
     @RequestMapping(value = "/proxy/{groupName}/{functionName}", method = RequestMethod.POST)
-    public Object proxy(@PathVariable String functionName, @PathVariable String groupName, @RequestBody String postData, @RequestHeader Map header) throws ClassNotFoundException, IllegalAccessException, InstantiationException, InvocationTargetException, IOException {
+    public Object proxy(@PathVariable String functionName, @PathVariable String groupName, @RequestBody String postData, @RequestHeader Map header) throws ClassNotFoundException, IllegalAccessException, InstantiationException, InvocationTargetException, IOException, NoSuchMethodException {
         String serverlessPackage = "gl.linpeng.serverless.advisor.controller";
         if (groupName != null && groupName.equalsIgnoreCase("aengine")) {
             serverlessPackage = "gl.linpeng.serverless.aengine.controller";
@@ -126,6 +127,10 @@ public class FunctionComputeProxyController {
             ObjectMapper mapper = new ObjectMapper();
             Type type = clz.getGenericSuperclass();
 
+            ParameterizedType parameterizedType = (ParameterizedType) type;
+            Class actualClass = (Class) parameterizedType.getActualTypeArguments()[0];
+            Object dto = mapper.readValue(postData, actualClass);
+
             // 增加auth验证判断
             Annotation annotation = clz.getAnnotation(Auth.class);
             if(annotation != null){
@@ -138,11 +143,19 @@ public class FunctionComputeProxyController {
                 if(!isVerify){
                     throw new RuntimeException("Verify token failed,Illegal credentials.");
                 }
+                // enhance request dto
+                Map<String, Claim> payload = TokenUtil.getPayload(Constants.TOKEN_SECRET,token);
+                // 赋值setOpenId
+                Method setOpenIdMethod = actualClass.getMethod("setOpenId", String.class);
+                setOpenIdMethod.invoke(dto, payload.get(Constants.KEY_OPEN_ID).asString());
+                // 赋值setUserId
+                Method setUserIdMethod = actualClass.getMethod("setUserId", Integer.class);
+                setUserIdMethod.invoke(dto, payload.get(Constants.KEY_USER_ID).asInt());
+                // 赋值setToken
+                Method setTokenMethod = actualClass.getMethod("setToken", String.class);
+                setTokenMethod.invoke(dto, token);
             }
 
-            ParameterizedType parameterizedType = (ParameterizedType) type;
-            Class actualClass = (Class) parameterizedType.getActualTypeArguments()[0];
-            Object dto = mapper.readValue(postData, actualClass);
             Object jsonObject = handle.invoke(instance, dto, ctx);
             result = JSON.toJSONString(jsonObject);
             // cache result
