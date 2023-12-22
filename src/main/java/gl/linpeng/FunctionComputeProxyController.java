@@ -11,6 +11,8 @@ import com.aliyun.fc.runtime.FunctionComputeLogger;
 import com.aliyun.fc.runtime.FunctionParam;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gl.linpeng.gf.annotation.Auth;
+import gl.linpeng.gf.utils.TokenUtil;
+import gl.linpeng.serverless.advisor.common.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
@@ -128,6 +130,10 @@ public class FunctionComputeProxyController {
                 String token = ctx.getExecutionCredentials().getSecurityToken();
                 if(token == null || token.length() == 0){
                     throw new RuntimeException("Can't invoke method,Check secret token please.");
+                }
+                boolean isVerify = TokenUtil.verifyToken(Constants.TOKEN_SECRET,token);
+                if(!isVerify){
+                    throw new RuntimeException("Verify token failed,Illegal credentials.");
                 }
             }
 
