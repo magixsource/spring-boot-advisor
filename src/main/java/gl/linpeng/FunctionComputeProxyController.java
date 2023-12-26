@@ -91,21 +91,21 @@ public class FunctionComputeProxyController {
                     Credentials credentials = new Credentials() {
                         @Override
                         public String getAccessKeyId() {
-                            Object accessKey = header.get("FC-ACCESS-KEY");
+                            Object accessKey = header.get("fc-access-key");
                             return accessKey == null ? null : accessKey.toString();
                         }
 
                         @Override
                         public String getAccessKeySecret() {
-                            Object accessSecret = header.get("FC-ACCESS-SECRET");
+                            Object accessSecret = header.get("fc-access-secret");
                             return accessSecret == null ? null : accessSecret.toString();
                         }
 
                         @Override
                         public String getSecurityToken() {
-                            Object accessToken = header.get("FC-ACCESS-TOKEN");
+                            Object accessToken = header.get("fc-access-token");
                             if(accessToken == null){
-                                accessToken = header.get("Authorization");
+                                accessToken = header.get("authorization");
                             }
                             return accessToken == null ? null : accessToken.toString();
                         }
@@ -150,7 +150,7 @@ public class FunctionComputeProxyController {
                 setOpenIdMethod.invoke(dto, payload.get(Constants.KEY_OPEN_ID).asString());
                 // 赋值setUserId
                 Method setUserIdMethod = actualClass.getMethod("setUserId", Integer.class);
-                setUserIdMethod.invoke(dto, payload.get(Constants.KEY_USER_ID).asInt());
+                setUserIdMethod.invoke(dto, Integer.valueOf(payload.get(Constants.KEY_USER_ID).asString()));
                 // 赋值setToken
                 Method setTokenMethod = actualClass.getMethod("setToken", String.class);
                 setTokenMethod.invoke(dto, token);
