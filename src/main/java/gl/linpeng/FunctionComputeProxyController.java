@@ -40,7 +40,7 @@ public class FunctionComputeProxyController {
     private static final Logger logger = LoggerFactory.getLogger(FunctionComputeProxyController.class);
 
     private Cache<String, String> lfuCache = CacheUtil.newLFUCache(1000);
-    private String[] cacheFunctions = new String[]{"disease", "food", "ingredient", "foodMaterialQuery"};
+    private String[] cacheFunctions = new String[]{"disease", "food", "ingredient", "foodMaterialQuery","settingQuery"};
 
     @RequestMapping(value = "/proxy/{groupName}/{functionName}", method = RequestMethod.POST)
     public Object proxy(@PathVariable String functionName, @PathVariable String groupName, @RequestBody String postData, @RequestHeader Map header) throws ClassNotFoundException, IllegalAccessException, InstantiationException, InvocationTargetException, IOException, NoSuchMethodException {
